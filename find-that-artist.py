@@ -9,9 +9,9 @@ spotify_get_playlists_url = f'https://api.spotify.com/v1/users/{user_id}/playlis
 
 
 # token grabbed from the console api. Will need to be changedif I want to make this a website
-access_token = 'BQBxCT8oCuAP9wDlljZT0MYHHOFxJjuaK835CAZV8eGx6Sjv1NhPmOzV0dH97hYEpMqmIXhSPG3jhFTXgVGdBo6g_K4Dx9vnBeXIxv3XAr05mruj2KVoLDMsQWP_5dOq4eK8tsTstMZ7Zh32fEhVq46vTXUND80gPcAgByMnqpnu39Y'
+access_token = 'BQAj9eyI5H759f1V2Yry0ObfzvYFXtHIKAHf_z1nFsgwgLol8LIkjAxHq4BR0nqVPO2DRMGCmieyi3wprEptc8SZRbV1YCeB4NM_WspheGeWoh8BsdPmfivTeUvU3jzgx2hr4pTezn-LOWzcBz3nUASlJQE0FJFU1ps8y-ltcLgDN3A'
 
-designated_artist = "mxmtoon"
+designated_artist = "Eminem"
 
 
 def get_playlists():
@@ -66,26 +66,30 @@ Steps
 
 def main():
     # 1.
+    print("Retrieving Playlists")
     playlists = get_playlists()
+    print("Playlists Retrieved")
     # want to throw these into a single list that has all the info
     # 2.
     actual_playlists = get_relevant_playlist_data(playlists)
-
+    print("Playlists trimmed")
     # 3.
     songs_by_artist = []
-
+    print("getting songs for artist")
     for playlist in actual_playlists:
         playlist_songs = get_songs_from_playlist(playlist['id'])
         actual_songs = get_relevant_song_data(playlist_songs)
 
         for song in actual_songs:
             if designated_artist in song['artist_names']:
+                song['playlist_name'] = playlist['name']
                 songs_by_artist.append(song)
 
     # print results
-    print(f"{designated_artist} sang the following songs from your playlists:")
+    print(f"\n{designated_artist} sang the following songs from your playlists:")
     for artist_song in songs_by_artist:
-        print(artist_song['song_name'])
+        print(
+            f"{artist_song['song_name']} is in '{artist_song['playlist_name']}'")
 
 
 if __name__ == '__main__':
