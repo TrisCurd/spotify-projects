@@ -1,0 +1,6 @@
+Code is currently really slow
+
+Can we work on playlists as we get them instead of waiting until all playlists are grabbed
+
+alternatively, can we preprocess the songs in the plyalist by adding them to the dictionary with the singer's name?
+    doesn't work faster than the first but works if you're doing it multiple times. means you only need to process the list of songs once
