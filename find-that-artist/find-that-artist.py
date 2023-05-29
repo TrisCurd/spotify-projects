@@ -4,35 +4,38 @@ import requests
 import time
 
 # set to just my acount, could change in the future
-user_id = 'swiftsushi'
+user_id = 'nguyenhuongvy166'
 num_playlists = 50
-# used to get playlists
-spotify_get_playlists_url = f'https://api.spotify.com/v1/users/{user_id}/playlists?limit={num_playlists}'
+
 
 # token grabbed from the console api. Will need to be changed if I want to make this a website
-access_token = 'BQB8VUnF_GMt9DNDCNDFCbL7aTSeWYldwlCWv1I8lgkQ_0Lu4BZozxDXq8oa62_oT24f84MyO3f9r-to_BwgeIm_4YmYQrGgWI0ASQVhfp9jOVARl53VgwQKre4Mmfljnxk4rxmyIC-n5689mzhKURBx0VUKsnBDQUYsrkzb4869ihTFpJ9HZ2Zompmhofk'
-designated_artist = "Eminem"
+access_token = 'BQDE0ENAHE6tThtHRkJ_5ZKEyadseR0pP2dkxwli3sTjgEh4_RrQEjfVX7P7o_IUd73d_XMNC8HJZNo4epiTbI914hCv4ROkri6bJ_BNxTK5ZurWxlEuVf0lUrYEioqWseZOs9WvbTr3Z8xAXBeP7ELeUgqEuERroJdNbRg6qS9eXCjKzlhO41'
+
+#choose which artist to search for here
+designated_artist = "Fuji Kaze"
 
 #an idea is filling this out, so if there's a way to keep data you only need to run the program once
 primary_artists_dict = {}
 
-def get_playlists():
-    response = requests.get(
+async def get_playlists():
+    # used to get playlists
+    spotify_get_playlists_url = f'https://api.spotify.com/v1/users/{user_id}/playlists?limit={num_playlists}'
+    response = await requests.get(
         spotify_get_playlists_url,
         headers={"Authorization": f"Bearer {access_token}"})
-    json_resp = response.json()
+    json_resp = await response.json()
 
     just_playlists = json_resp['items']
 
     return just_playlists
 
 
-def get_songs_from_playlist(playlist_id):
+async def get_songs_from_playlist(playlist_id):
     # using the fields tab to just get the relevant info
     get_songs_url = f'https://api.spotify.com/v1/playlists/{playlist_id}/tracks?fields=items(track(artists(name)%2Cname))'
-    response = requests.get(
+    response = await requests.get(
         get_songs_url, headers={"Authorization": f"Bearer {access_token}"})
-    json_resp = response.json()
+    json_resp = await response.json()
 
     just_songs = json_resp['items']
 
@@ -70,11 +73,11 @@ Steps
 '''
 
 
-def main():
+async def main():
     # 1.
     start_time = time.perf_counter()
     print("Retrieving Playlists")
-    untrimmed_playlists = get_playlists()
+    untrimmed_playlists = await get_playlists()
     end_time = time.perf_counter()
     time_diff_sec = end_time - start_time
     print(f"Playlists Retrieved. Time Elapsed: {time_diff_sec}")
@@ -91,7 +94,7 @@ def main():
     print(trimmed_playlists[0])
     start_time = time.perf_counter()
     for curr_playlist in trimmed_playlists:
-        untrimmed_song_data = get_songs_from_playlist(curr_playlist['id'])
+        untrimmed_song_data = await get_songs_from_playlist(curr_playlist['id'])
         trimmed_song_data = get_relevant_song_data(untrimmed_song_data)
 
         for curr_song in trimmed_song_data:
@@ -111,5 +114,5 @@ def main():
         )
 
 
-if __name__ == '__main__':
-    main()
+#run it
+main()
