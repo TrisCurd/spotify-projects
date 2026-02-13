@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Login from './components/Login';
+import {BrowserRouter, Routes, Route, Link} from 'react-router-dom';
 import Profile from './components/Profile';
 import TopTracks from './components/TopTracks';
 import { isLoggedIn, exchangeCodeForToken } from './utils/spotify';
@@ -50,11 +51,26 @@ function App() {
     return <Login />;
   }
 
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#fafafa' }}>
-      <Profile />
-      <TopTracks />
-    </div>
+return (
+    <BrowserRouter>
+      <div style={{ minHeight: '100vh', backgroundColor: '#fafafa' }}>
+        <nav style={{ 
+          padding: '1rem', 
+          backgroundColor: '#1DB954', 
+          marginBottom: '2rem' 
+        }}>
+          <Link to="/" style={{ color: 'white', marginRight: '1rem' }}>Profile</Link>
+          <Link to="/top-tracks" style={{ color: 'white', marginRight: '1rem' }}>Top Tracks</Link>
+          <Link to="/search" style={{ color: 'white' }}>Search</Link>
+        </nav>
+        
+        <Routes>
+          <Route path="/" element={<Profile />} />
+          <Route path="/top-tracks" element={<TopTracks />} />
+          {/* <Route path="/search" element={<Search />} /> */}
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
 
