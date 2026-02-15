@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { spotifyApi } from "../utils/spotify";
+import { getSpotifyClient } from "../utils/spotify";
 import { Box, Divider, Typography } from "@mui/material";
-import { SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
+import { MaxInt, SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
 function FindThatArtist() {
   /**
    * @type {[SimplifiedPlaylist[], Function]}
@@ -17,14 +17,18 @@ function FindThatArtist() {
     async function getPlaylists() {
       setLoading(true);
       try {
+        const spotify = getSpotifyClient();
+
+        //get all playlists with the iterator
         let allPlaylists: SimplifiedPlaylist[] = [];
-        let offset = 0;
-        const limit = 50;
         let total = 0;
+        let offset = 0;
+        let limit: MaxInt<50> = 50;
 
         //get total from first
-        const initCall = await spotifyApi(
-          `/me/playlists?limit=${limit}&offset=${offset}`,
+        const initCall = await spotify.currentUser.playlists.playlists(
+          limit,
+          offset,
         );
 
         total = initCall.total;
@@ -32,8 +36,9 @@ function FindThatArtist() {
         //if the first call didn't get them all
         while (allPlaylists.length < total) {
           offset += limit;
-          const nextCall = await spotifyApi(
-            `/me/playlists?limit=${limit}&offset=${offset}`,
+          const nextCall = await spotify.currentUser.playlists.playlists(
+            limit,
+            offset,
           );
           const nextPlaylists = nextCall.items;
           //add to existing playlists

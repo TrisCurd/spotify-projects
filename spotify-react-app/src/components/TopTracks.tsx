@@ -1,18 +1,25 @@
 import { useState, useEffect } from "react";
-import { spotifyApi } from "../utils/spotify";
+import { spotifyApi, getSpotifyClient } from "../utils/spotify";
+import { MaxInt, Track } from "@spotify/web-api-ts-sdk";
 
 function TopTracks() {
-  const [tracks, setTracks] = useState([]);
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState("medium_term");
+  const [timeRange, setTimeRange] = useState<
+    "short_term" | "medium_term" | "long_term"
+  >("medium_term");
 
   useEffect(() => {
     async function fetchTopTracks() {
       setLoading(true);
       try {
-        const data = await spotifyApi(
+        const spotify = getSpotifyClient();
+        let data = await spotifyApi(
           `/me/top/tracks?limit=10&time_range=${timeRange}`,
         );
+        const limit: MaxInt<50> = 10;
+        data = spotify.currentUser.topItems("tracks", timeRange, limit);
+
         console.log("data found");
         setTracks(data.items);
       } catch (err) {

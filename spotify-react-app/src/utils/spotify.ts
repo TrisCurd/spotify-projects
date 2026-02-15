@@ -1,5 +1,5 @@
 // Spotify API utility functions using Authorization Code Flow with PKCE
-
+import { SpotifyApi, AccessToken } from "@spotify/web-api-ts-sdk";
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
 const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
@@ -14,7 +14,7 @@ const SCOPES = [
 ];
 
 // Generate a random string for the code verifier
-function generateRandomString(length) {
+function generateRandomString(length: number) {
   const possible =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const values = crypto.getRandomValues(new Uint8Array(length));
@@ -22,13 +22,13 @@ function generateRandomString(length) {
 }
 
 // Create SHA256 hash and base64url encode it
-async function sha256(plain) {
+async function sha256(plain: string | undefined) {
   const encoder = new TextEncoder();
   const data = encoder.encode(plain);
   return window.crypto.subtle.digest("SHA-256", data);
 }
 
-function base64urlencode(a) {
+function base64urlencode(a: ArrayBuffer) {
   return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
@@ -36,7 +36,7 @@ function base64urlencode(a) {
 }
 
 // Generate code challenge from verifier
-async function generateCodeChallenge(codeVerifier) {
+async function generateCodeChallenge(codeVerifier: string) {
   const hashed = await sha256(codeVerifier);
   return base64urlencode(hashed);
 }
@@ -62,7 +62,7 @@ export async function redirectToSpotifyAuth() {
 }
 
 // Exchange authorization code for access token
-export async function exchangeCodeForToken(code) {
+export async function exchangeCodeForToken(code: string) {
   const codeVerifier = localStorage.getItem("code_verifier");
 
   const params = new URLSearchParams({
@@ -146,7 +146,7 @@ export async function getAccessToken() {
 }
 
 // Make authenticated API request
-export async function spotifyApi(endpoint, options = {}) {
+export async function spotifyApi(endpoint: string, options = {}) {
   const token = await getAccessToken();
 
   if (!token) {
@@ -180,4 +180,25 @@ export function logout() {
 // Check if user is logged in
 export function isLoggedIn() {
   return !!localStorage.getItem("access_token");
+}
+
+export function getSpotifyClient(): SpotifyApi {
+  const token = localStorage.getItem("access_token");
+  const refreshToken = localStorage.getItem("refresh_token");
+  const expiresAt = localStorage.getItem("expires_at");
+
+  if (!token) {
+    throw new Error("No access token available");
+  }
+
+  const accessToken: AccessToken = {
+    access_token: token,
+    token_type: "Bearer",
+    expires_in: expiresAt
+      ? Math.floor((parseInt(expiresAt) - Date.now()) / 1000)
+      : 3600,
+    refresh_token: refreshToken || "",
+  };
+
+  return SpotifyApi.withAccessToken(CLIENT_ID, accessToken);
 }
