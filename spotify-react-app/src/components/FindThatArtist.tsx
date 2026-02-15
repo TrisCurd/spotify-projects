@@ -9,7 +9,6 @@ function FindThatArtist() {
   const [allPlaylists, setPlaylists] = useState<SimplifiedPlaylist[]>([]);
 
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error>();
 
   //get playlists
   useEffect(() => {
@@ -47,7 +46,7 @@ function FindThatArtist() {
         //all playlists retrieved
         setPlaylists(allPlaylists);
       } catch (error) {
-        setError(error as Error);
+        console.error("error setting up Find That Artist", error);
       } finally {
         setLoading(false);
       }

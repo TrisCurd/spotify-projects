@@ -14,11 +14,12 @@ function TopTracks() {
       setLoading(true);
       try {
         const spotify = getSpotifyClient();
-        let data = await spotifyApi(
-          `/me/top/tracks?limit=10&time_range=${timeRange}`,
-        );
         const limit: MaxInt<50> = 10;
-        data = spotify.currentUser.topItems("tracks", timeRange, limit);
+        const data = await spotify.currentUser.topItems(
+          "tracks",
+          timeRange,
+          limit,
+        );
 
         console.log("data found");
         setTracks(data.items);
