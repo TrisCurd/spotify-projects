@@ -164,33 +164,6 @@ export async function getAccessToken(): Promise<string | null> {
   return token;
 }
 
-// Make authenticated API request
-export async function spotifyApi(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<any> {
-  const token = await getAccessToken();
-
-  if (!token) {
-    throw new Error("No access token available");
-  }
-
-  const response = await fetch(`https://api.spotify.com/v1${endpoint}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Spotify API error: ${response.status}`);
-  }
-
-  return await response.json();
-}
-
 // Logout
 export function logout(): void {
   localStorage.removeItem("access_token");
