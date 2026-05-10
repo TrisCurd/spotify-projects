@@ -129,12 +129,20 @@ export async function refreshAccessToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to refresh token");
+    const errorData = await response.json().catch(() => ({}));
+    if (errorData.error === "invalid_grant") {
+      logout();
+      window.location.reload();
+    }
+    throw new Error(`Failed to refresh token: ${JSON.stringify(errorData)}`);
   }
 
   const data = await response.json();
 
   localStorage.setItem("access_token", data.access_token);
+  if (data.refresh_token) {
+    localStorage.setItem("refresh_token", data.refresh_token);
+  }
   localStorage.setItem(
     "expires_at",
     String(Date.now() + data.expires_in * 1000),

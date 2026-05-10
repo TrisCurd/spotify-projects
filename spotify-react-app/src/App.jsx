@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Profile from "./components/Profile";
 import TopTracks from "./components/TopTracks";
 import FindThatArtist from "./components/FindThatArtist";
-import { isLoggedIn, exchangeCodeForToken } from "./utils/spotify";
+import { getAccessToken, exchangeCodeForToken } from "./utils/spotify";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -26,7 +26,8 @@ function App() {
           console.error("Error exchanging code for token:", error);
         }
       } else {
-        setLoggedIn(isLoggedIn());
+        const token = await getAccessToken();
+        setLoggedIn(!!token);
       }
       setLoading(false);
     };

@@ -112,6 +112,8 @@ Check out the [Spotify Web API Reference](https://developer.spotify.com/document
 
 **"Invalid redirect URI"**: Make sure `http://localhost:5173/callback` is added to your app's Redirect URIs in the Spotify Dashboard.
 
+Error: Failed to refresh token: , {"error":"invalid_grant","error_description":"Refresh token revoked"}
+
 **CORS errors**: The Spotify API supports CORS for browser requests, but make sure you're using the correct endpoints.
 
 **401 Unauthorized**: Your access token may have expired. Implement token refresh using the refresh token.
