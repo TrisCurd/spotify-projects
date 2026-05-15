@@ -7,6 +7,8 @@ import {
   FormControlLabel,
   Grid,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { MaxInt, SimplifiedPlaylist } from "@spotify/web-api-ts-sdk";
@@ -19,6 +21,7 @@ function FindThatArtist() {
   const [includeFollowed, setIncludeFollowed] = useState<boolean>(true);
   const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(new Set());
   const [artistQuery, setArtistQuery] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"alpha" | "songs">("alpha");
 
   useEffect(() => {
     async function getPlaylists() {
@@ -43,8 +46,6 @@ function FindThatArtist() {
           const nextCall = await spotify.currentUser.playlists.playlists(limit, offset);
           allPlaylists = [...allPlaylists, ...nextCall.items];
         }
-
-        allPlaylists.sort((a, b) => a.name.localeCompare(b.name));
 
         setPlaylists(allPlaylists);
         setShownPlaylists(allPlaylists);
@@ -92,8 +93,16 @@ function FindThatArtist() {
     );
   }
 
-  const selectedShown = shownPlaylists.filter((p) => selectedPlaylistIds.has(p.id));
-  const unselectedShown = shownPlaylists.filter((p) => !selectedPlaylistIds.has(p.id));
+  function sortPlaylists(list: SimplifiedPlaylist[]) {
+    return [...list].sort((a, b) =>
+      sortBy === "songs"
+        ? b.tracks.total - a.tracks.total
+        : a.name.localeCompare(b.name)
+    );
+  }
+
+  const selectedShown = sortPlaylists(shownPlaylists.filter((p) => selectedPlaylistIds.has(p.id)));
+  const unselectedShown = sortPlaylists(shownPlaylists.filter((p) => !selectedPlaylistIds.has(p.id)));
   const allShownSelected = shownPlaylists.length > 0 && unselectedShown.length === 0;
   const someShownSelected = selectedShown.length > 0 && !allShownSelected;
 
@@ -120,6 +129,7 @@ function FindThatArtist() {
             <Typography variant="body2" color="text.secondary">
               {playlist.owner.display_name ?? playlist.owner.id}
               {playlist.collaborative ? " · collaborative" : ""}
+              {" · "}{playlist.tracks.total} songs
             </Typography>
           </Grid>
         </Grid>
@@ -164,6 +174,17 @@ function FindThatArtist() {
             }
             label="Include Followed Playlists"
           />
+        </Grid>
+        <Grid size="auto">
+          <ToggleButtonGroup
+            value={sortBy}
+            exclusive
+            onChange={(_, val) => val && setSortBy(val)}
+            size="small"
+          >
+            <ToggleButton value="alpha">A–Z</ToggleButton>
+            <ToggleButton value="songs"># Songs</ToggleButton>
+          </ToggleButtonGroup>
         </Grid>
         <Grid size="grow">
           <Typography align="right">
