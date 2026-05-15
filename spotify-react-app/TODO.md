@@ -5,9 +5,17 @@
 
 - add timer for how long that took
 
-- instead of showing all artists, make a list and let me search for specific names
+- search for specific playlist names during the selection process
 
+- add header that changes between Selection and Categorization process
+
+- instead of showing all artists in the dictionary, make a list and let me search for specific names
+
+- sort by artist name and number of songs they have in my playlists
 - add picture of artist
 
 - add info of which playlist has each song
+
+
+
 
