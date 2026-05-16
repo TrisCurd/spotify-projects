@@ -65,7 +65,13 @@ const ArtistRow = memo(function ArtistRow({
   return (
     <Box>
       <Box
-        sx={{ display: "flex", alignItems: "center", py: 1, cursor: "pointer", gap: 1 }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          py: 1,
+          cursor: "pointer",
+          gap: 1,
+        }}
         onClick={() => onToggle(artistName)}
       >
         <Typography sx={{ flex: 1 }}>{artistName}</Typography>
@@ -94,12 +100,17 @@ const ArtistRow = memo(function ArtistRow({
 function FindThatArtist() {
   // Selection state
   const [allPlaylists, setPlaylists] = useState<SimplifiedPlaylist[]>([]);
-  const [shownPlaylists, setShownPlaylists] = useState<SimplifiedPlaylist[]>([]);
+  const [shownPlaylists, setShownPlaylists] = useState<SimplifiedPlaylist[]>(
+    [],
+  );
   const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [includeFollowed, setIncludeFollowed] = useState<boolean>(true);
-  const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(new Set());
+  const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [artistQuery, setArtistQuery] = useState<string>("");
+  const [playlistSearch, setPlaylistSearch] = useState<string>("");
   const [sortBy, setSortBy] = useState<"alpha" | "songs">("alpha");
 
   // Categorization state
@@ -110,7 +121,9 @@ function FindThatArtist() {
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [resultQuery, setResultQuery] = useState("");
   const [resultSortBy, setResultSortBy] = useState<"name" | "count">("count");
-  const [expandedArtists, setExpandedArtists] = useState<Set<string>>(new Set());
+  const [expandedArtists, setExpandedArtists] = useState<Set<string>>(
+    new Set(),
+  );
 
   useEffect(() => {
     async function getPlaylists() {
@@ -125,13 +138,19 @@ function FindThatArtist() {
         let offset = 0;
         const limit: MaxInt<50> = 50;
 
-        const initCall = await spotify.currentUser.playlists.playlists(limit, offset);
+        const initCall = await spotify.currentUser.playlists.playlists(
+          limit,
+          offset,
+        );
         total = initCall.total;
         allPlaylists = [...initCall.items];
 
         while (allPlaylists.length < total) {
           offset += limit;
-          const nextCall = await spotify.currentUser.playlists.playlists(limit, offset);
+          const nextCall = await spotify.currentUser.playlists.playlists(
+            limit,
+            offset,
+          );
           allPlaylists = [...allPlaylists, ...nextCall.items];
         }
 
@@ -175,7 +194,9 @@ function FindThatArtist() {
   }
 
   async function handleCategorize() {
-    const selectedPlaylists = allPlaylists.filter((p) => selectedPlaylistIds.has(p.id));
+    const selectedPlaylists = allPlaylists.filter((p) =>
+      selectedPlaylistIds.has(p.id),
+    );
     setCategorizing(true);
     setProgress({ done: 0, total: selectedPlaylists.length });
     const startTime = Date.now();
@@ -203,7 +224,10 @@ function FindThatArtist() {
           const track = item.track as Track;
           for (const artist of track.artists) {
             const entries = map.get(artist.name) ?? [];
-            entries.push({ trackName: track.name, playlistName: playlist.name });
+            entries.push({
+              trackName: track.name,
+              playlistName: playlist.name,
+            });
             map.set(artist.name, entries);
           }
         }
@@ -238,7 +262,9 @@ function FindThatArtist() {
   const filteredArtists = useMemo(
     () =>
       [...artistMap.entries()]
-        .filter(([name]) => name.toLowerCase().includes(resultQuery.toLowerCase()))
+        .filter(([name]) =>
+          name.toLowerCase().includes(resultQuery.toLowerCase()),
+        )
         .sort(([aName, aSongs], [bName, bSongs]) =>
           resultSortBy === "count"
             ? bSongs.length - aSongs.length
@@ -257,13 +283,20 @@ function FindThatArtist() {
 
   // --- Categorization view ---
   if (view === "categorization") {
-    const totalSongs = [...artistMap.values()].reduce((sum, songs) => sum + songs.length, 0);
+    const totalSongs = [...artistMap.values()].reduce(
+      (sum, songs) => sum + songs.length,
+      0,
+    );
     const elapsed = elapsedMs != null ? (elapsedMs / 1000).toFixed(1) : "?";
 
     return (
       <Box sx={{ p: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-          <Button variant="outlined" size="small" onClick={() => setView("selection")}>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setView("selection")}
+          >
             ← Back
           </Button>
           <Typography variant="h6">Results</Typography>
@@ -313,15 +346,28 @@ function FindThatArtist() {
     );
   }
 
-  const selectedShown = sortPlaylists(shownPlaylists.filter((p) => selectedPlaylistIds.has(p.id)));
-  const unselectedShown = sortPlaylists(shownPlaylists.filter((p) => !selectedPlaylistIds.has(p.id)));
-  const allShownSelected = shownPlaylists.length > 0 && unselectedShown.length === 0;
+  const playlistSearchLower = playlistSearch.toLowerCase();
+  const visiblePlaylists = playlistSearch
+    ? shownPlaylists.filter((p) =>
+        p.name.toLowerCase().includes(playlistSearchLower),
+      )
+    : shownPlaylists;
+  const selectedShown = sortPlaylists(
+    visiblePlaylists.filter((p) => selectedPlaylistIds.has(p.id)),
+  );
+  const unselectedShown = sortPlaylists(
+    visiblePlaylists.filter((p) => !selectedPlaylistIds.has(p.id)),
+  );
+  const allShownSelected =
+    shownPlaylists.length > 0 && unselectedShown.length === 0;
   const someShownSelected = selectedShown.length > 0 && !allShownSelected;
 
   function handleSelectAll(checked: boolean) {
     setSelectedPlaylistIds((prev) => {
       const next = new Set(prev);
-      shownPlaylists.forEach((p) => (checked ? next.add(p.id) : next.delete(p.id)));
+      shownPlaylists.forEach((p) =>
+        checked ? next.add(p.id) : next.delete(p.id),
+      );
       return next;
     });
   }
@@ -355,15 +401,13 @@ function FindThatArtist() {
       </Box>
 
       <TextField
-        label="Search by artist"
-        value={artistQuery}
-        onChange={(e) => setArtistQuery(e.target.value)}
+        label="Filter playlists"
+        value={playlistSearch}
+        onChange={(e) => setPlaylistSearch(e.target.value)}
         size="small"
         fullWidth
         sx={{ mb: 2 }}
       />
-
-      <Divider sx={{ mb: 2 }} />
 
       <Grid container spacing={2} sx={{ mb: 2 }} alignItems="center">
         <Grid size="auto">
@@ -428,7 +472,6 @@ function FindThatArtist() {
           onToggle={handlePlaylistToggle}
         />
       ))}
-
     </Box>
   );
 }
