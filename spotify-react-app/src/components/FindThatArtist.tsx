@@ -42,7 +42,7 @@ function PlaylistRow({
             {playlist.owner.display_name ?? playlist.owner.id}
             {playlist.collaborative ? " · collaborative" : ""}
             {" · "}
-            {playlist.tracks.total} songs
+            {playlist.tracks!.total} songs
           </Typography>
         </Grid>
       </Grid>
@@ -109,7 +109,6 @@ function FindThatArtist() {
   const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
     new Set(),
   );
-  const [artistQuery, setArtistQuery] = useState<string>("");
   const [playlistSearch, setPlaylistSearch] = useState<string>("");
   const [sortBy, setSortBy] = useState<"alpha" | "songs">("alpha");
 
@@ -341,7 +340,7 @@ function FindThatArtist() {
   function sortPlaylists(list: SimplifiedPlaylist[]) {
     return [...list].sort((a, b) =>
       sortBy === "songs"
-        ? b.tracks.total - a.tracks.total
+        ? b.tracks!.total - a.tracks!.total
         : a.name.localeCompare(b.name),
     );
   }
