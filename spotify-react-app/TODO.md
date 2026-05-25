@@ -21,8 +21,8 @@
 - suggestions of other songs from that artist you might like based on the songs already in your playlists? (might be another feature where you feed songs in)
 - ~~if the same song appears multiple times in playlists, make it one entry (like "stick season" in playlists 2 and 14)~~
 - ~~sort songs under each artist alphabetically~~
-- sort songs under each artist by playlist name
-- alternate colors for each artist (like how they do it in tables)
+- ~~sort songs under each artist by playlist name~~
+- ~~alternate colors for each artist (like how they do it in tables)~~
 
 - ~~add info of which playlist has each song~~
 

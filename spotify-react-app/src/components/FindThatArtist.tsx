@@ -15,7 +15,12 @@ import {
 } from "@mui/material";
 import { MaxInt, SimplifiedPlaylist, Track } from "@spotify/web-api-ts-sdk";
 
-type SongEntry = { trackName: string; playlistNames: string[] };
+type SongEntry = {
+  trackName: string;
+  playlistNames: string[];
+  previewUrl: string | null;
+  spotifyUrl: string;
+};
 type ArtistEntry = { artistId: string; songs: SongEntry[] };
 type ArtistMap = Map<string, ArtistEntry>;
 type ArtistDetails = {
@@ -26,9 +31,89 @@ type ArtistDetails = {
 };
 
 function formatFollowers(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M followers`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K followers`;
+  if (n >= 1_000_000) { return `${(n / 1_000_000).toFixed(1)}M followers`; }
+  if (n >= 1_000) { return `${(n / 1_000).toFixed(1)}K followers`; }
   return `${n} followers`;
+}
+
+let activeAudio: HTMLAudioElement | null = null;
+let activeSetPlaying: ((v: boolean) => void) | null = null;
+
+function SongRow({ song }: { song: SongEntry }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (activeSetPlaying === setIsPlaying) {
+        activeAudio?.pause();
+        activeAudio = null;
+        activeSetPlaying = null;
+      }
+    };
+  }, []);
+
+  function handlePlayClick() {
+    if (isPlaying) {
+      activeAudio?.pause();
+      activeAudio = null;
+      activeSetPlaying = null;
+      setIsPlaying(false);
+    } else {
+      activeAudio?.pause();
+      activeSetPlaying?.(false);
+
+      if (!song.previewUrl) { return; }
+      const audio = new Audio(song.previewUrl);
+      audio.play();
+      audio.onended = () => {
+        setIsPlaying(false);
+        activeAudio = null;
+        activeSetPlaying = null;
+      };
+      activeAudio = audio;
+      activeSetPlaying = setIsPlaying;
+      setIsPlaying(true);
+    }
+  }
+
+  return (
+    <Box sx={{ py: 0.5, display: "flex", alignItems: "flex-start", gap: 1 }}>
+      <Box
+        component="button"
+        onClick={handlePlayClick}
+        disabled={!song.previewUrl}
+        sx={{
+          border: "none",
+          background: "none",
+          cursor: song.previewUrl ? "pointer" : "default",
+          opacity: song.previewUrl ? 1 : 0.3,
+          fontSize: 14,
+          pt: 0.25,
+          flexShrink: 0,
+        }}
+      >
+        {isPlaying ? "⏸" : "▶"}
+      </Box>
+      <Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="body2">{song.trackName}</Typography>
+          <Typography
+            component="a"
+            href={song.spotifyUrl}
+            target="_blank"
+            rel="noreferrer"
+            variant="caption"
+            sx={{ color: "primary.main", textDecoration: "none", flexShrink: 0 }}
+          >
+            ↗ Spotify
+          </Typography>
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          {song.playlistNames.join(" · ")}
+        </Typography>
+      </Box>
+    </Box>
+  );
 }
 
 function PlaylistRow({
@@ -84,7 +169,7 @@ const ArtistRow = memo(function ArtistRow({
   const [details, setDetails] = useState<ArtistDetails | null>(null);
 
   useEffect(() => {
-    if (!isExpanded || details) return;
+    if (!isExpanded || details) { return; }
     const spotify = getSpotifyClient();
     spotify.artists.get(artistId).then((artist) => {
       setDetails({
@@ -97,7 +182,7 @@ const ArtistRow = memo(function ArtistRow({
   }, [isExpanded, artistId]);
 
   const sortedSongs = useMemo(() => {
-    if (!isExpanded) return [];
+    if (!isExpanded) { return []; }
     return [...songs].sort((a, b) =>
       songSortBy === "playlist"
         ? a.playlistNames[0].localeCompare(b.playlistNames[0])
@@ -145,12 +230,7 @@ const ArtistRow = memo(function ArtistRow({
             </Box>
           )}
           {sortedSongs.map((song) => (
-            <Box key={song.trackName} sx={{ py: 0.5 }}>
-              <Typography variant="body2">{song.trackName}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {song.playlistNames.join(" · ")}
-              </Typography>
-            </Box>
+            <SongRow key={song.trackName} song={song} />
           ))}
         </Box>
       )}
@@ -232,8 +312,8 @@ function FindThatArtist() {
   function handlePlaylistToggle(id: string, checked: boolean) {
     setSelectedPlaylistIds((prev) => {
       const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
+      if (checked) { next.add(id); }
+      else { next.delete(id); }
       return next;
     });
   }
@@ -282,7 +362,7 @@ function FindThatArtist() {
         total = response.total;
 
         for (const item of response.items) {
-          if (!item.track || item.track.type !== "track") continue;
+          if (!item.track || item.track.type !== "track") { continue; }
           const track = item.track as Track;
           for (const artist of track.artists) {
             const entry = map.get(artist.name) ?? { artistId: artist.id, songs: [] };
@@ -290,7 +370,12 @@ function FindThatArtist() {
             if (existing) {
               existing.playlistNames.push(playlist.name);
             } else {
-              entry.songs.push({ trackName: track.name, playlistNames: [playlist.name] });
+              entry.songs.push({
+                trackName: track.name,
+                playlistNames: [playlist.name],
+                previewUrl: track.preview_url ?? null,
+                spotifyUrl: track.external_urls.spotify,
+              });
             }
             map.set(artist.name, entry);
           }
@@ -317,7 +402,7 @@ function FindThatArtist() {
   const toggleArtistExpanded = useCallback((name: string) => {
     setExpandedArtists((prev) => {
       const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
+      if (next.has(name)) { next.delete(name); }
       else next.add(name);
       return next;
     });
