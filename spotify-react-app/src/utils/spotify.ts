@@ -12,6 +12,9 @@ const SCOPES = [
   "user-read-recently-played",
   "playlist-read-private",
   "playlist-read-collaborative",
+  "streaming",
+  "user-read-playback-state",
+  "user-modify-playback-state",
 ];
 
 // Generate a random string for the code verifier
@@ -185,6 +188,31 @@ export function isLoggedIn(): boolean {
   return !!localStorage.getItem("access_token");
 }
 
+const MAX_RETRIES = 4;
+
+async function fetchWithRetry(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  let attempt = 0;
+
+  while (true) {
+    const response = await fetch(input, init);
+
+    if (response.status !== 429 || attempt >= MAX_RETRIES) {
+      return response;
+    }
+
+    const retryAfter = response.headers.get("Retry-After");
+    const waitMs = retryAfter
+      ? parseInt(retryAfter) * 1000
+      : Math.pow(2, attempt) * 1000;
+
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+    attempt++;
+  }
+}
+
 export function getSpotifyClient(): SpotifyApi {
   const token = localStorage.getItem("access_token");
   const refreshToken = localStorage.getItem("refresh_token");
@@ -203,5 +231,5 @@ export function getSpotifyClient(): SpotifyApi {
     refresh_token: refreshToken || "",
   };
 
-  return SpotifyApi.withAccessToken(CLIENT_ID, accessToken);
+  return SpotifyApi.withAccessToken(CLIENT_ID, accessToken, { fetch: fetchWithRetry });
 }

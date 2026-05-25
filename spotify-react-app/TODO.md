@@ -7,7 +7,7 @@
 
 - ~~add timer for how long that took~~
 
-- search for specific playlist names during the selection process
+- ~~search for specific playlist names during the selection process~~
 
 - ~~add header that changes between Selection and Categorization process~~
 
@@ -15,6 +15,7 @@
 
 - ~~sort by artist name and number of songs they have in my playlists~~
 - add picture of artist
+- details of artist like real name and age if easy to grab
 - add play button after each song that lets you play a snippet of the song, similar to how instagram does it
 - suggestions of other songs from that artist you might like based on the songs already in your playlists? (might be another feature where you feed songs in)
 -
