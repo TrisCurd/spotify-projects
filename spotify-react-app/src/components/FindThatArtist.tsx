@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { MaxInt, SimplifiedPlaylist, Track } from "@spotify/web-api-ts-sdk";
 
-type SongEntry = { trackName: string; playlistName: string };
+type SongEntry = { trackName: string; playlistNames: string[] };
 type ArtistMap = Map<string, SongEntry[]>;
 
 function PlaylistRow({
@@ -82,11 +82,11 @@ const ArtistRow = memo(function ArtistRow({
       </Box>
       {isExpanded && (
         <Box sx={{ pl: 2, pb: 1 }}>
-          {songs.map((song, i) => (
-            <Box key={i} sx={{ py: 0.5 }}>
+          {[...songs].sort((a, b) => a.trackName.localeCompare(b.trackName)).map((song) => (
+            <Box key={song.trackName} sx={{ py: 0.5 }}>
               <Typography variant="body2">{song.trackName}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {song.playlistName}
+                {song.playlistNames.join(" · ")}
               </Typography>
             </Box>
           ))}
@@ -223,10 +223,12 @@ function FindThatArtist() {
           const track = item.track as Track;
           for (const artist of track.artists) {
             const entries = map.get(artist.name) ?? [];
-            entries.push({
-              trackName: track.name,
-              playlistName: playlist.name,
-            });
+            const existing = entries.find((e) => e.trackName === track.name);
+            if (existing) {
+              existing.playlistNames.push(playlist.name);
+            } else {
+              entries.push({ trackName: track.name, playlistNames: [playlist.name] });
+            }
             map.set(artist.name, entries);
           }
         }
