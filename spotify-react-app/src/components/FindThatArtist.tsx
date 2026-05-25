@@ -16,7 +16,20 @@ import {
 import { MaxInt, SimplifiedPlaylist, Track } from "@spotify/web-api-ts-sdk";
 
 type SongEntry = { trackName: string; playlistNames: string[] };
-type ArtistMap = Map<string, SongEntry[]>;
+type ArtistEntry = { artistId: string; songs: SongEntry[] };
+type ArtistMap = Map<string, ArtistEntry>;
+type ArtistDetails = {
+  imageUrl: string | null;
+  popularity: number;
+  followers: number;
+  spotifyUrl: string;
+};
+
+function formatFollowers(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M followers`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K followers`;
+  return `${n} followers`;
+}
 
 function PlaylistRow({
   playlist,
@@ -53,25 +66,49 @@ function PlaylistRow({
 
 const ArtistRow = memo(function ArtistRow({
   artistName,
+  artistId,
   songs,
   isExpanded,
   onToggle,
+  songSortBy,
+  index,
 }: {
   artistName: string;
+  artistId: string;
   songs: SongEntry[];
   isExpanded: boolean;
   onToggle: (name: string) => void;
+  songSortBy: "name" | "playlist";
+  index: number;
 }) {
+  const [details, setDetails] = useState<ArtistDetails | null>(null);
+
+  useEffect(() => {
+    if (!isExpanded || details) return;
+    const spotify = getSpotifyClient();
+    spotify.artists.get(artistId).then((artist) => {
+      setDetails({
+        imageUrl: artist.images[0]?.url ?? null,
+        popularity: artist.popularity,
+        followers: artist.followers.total,
+        spotifyUrl: artist.external_urls.spotify,
+      });
+    }).catch((err) => console.error("Failed to fetch artist details", err));
+  }, [isExpanded, artistId]);
+
+  const sortedSongs = useMemo(() => {
+    if (!isExpanded) return [];
+    return [...songs].sort((a, b) =>
+      songSortBy === "playlist"
+        ? a.playlistNames[0].localeCompare(b.playlistNames[0])
+        : a.trackName.localeCompare(b.trackName),
+    );
+  }, [songs, songSortBy, isExpanded]);
+
   return (
-    <Box>
+    <Box sx={{ bgcolor: index % 2 === 0 ? "transparent" : "action.hover" }}>
       <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          py: 1,
-          cursor: "pointer",
-          gap: 1,
-        }}
+        sx={{ display: "flex", alignItems: "center", py: 1, cursor: "pointer", gap: 1, px: 1 }}
         onClick={() => onToggle(artistName)}
       >
         <Typography sx={{ flex: 1 }}>{artistName}</Typography>
@@ -81,8 +118,33 @@ const ArtistRow = memo(function ArtistRow({
         <Typography sx={{ ml: 1 }}>{isExpanded ? "▲" : "▼"}</Typography>
       </Box>
       {isExpanded && (
-        <Box sx={{ pl: 2, pb: 1 }}>
-          {[...songs].sort((a, b) => a.trackName.localeCompare(b.trackName)).map((song) => (
+        <Box sx={{ pl: 2, pb: 2 }}>
+          {details && (
+            <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center" }}>
+              {details.imageUrl && (
+                <Box
+                  component="img"
+                  src={details.imageUrl}
+                  alt={artistName}
+                  sx={{ width: 64, height: 64, borderRadius: 1, objectFit: "cover" }}
+                />
+              )}
+              <Box>
+                <Typography variant="body2">
+                  Popularity: {details.popularity} / 100
+                </Typography>
+                <Typography variant="body2">
+                  {formatFollowers(details.followers)}
+                </Typography>
+                <Typography variant="body2">
+                  <a href={details.spotifyUrl} target="_blank" rel="noreferrer">
+                    Open in Spotify
+                  </a>
+                </Typography>
+              </Box>
+            </Box>
+          )}
+          {sortedSongs.map((song) => (
             <Box key={song.trackName} sx={{ py: 0.5 }}>
               <Typography variant="body2">{song.trackName}</Typography>
               <Typography variant="caption" color="text.secondary">
@@ -120,6 +182,7 @@ function FindThatArtist() {
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [resultQuery, setResultQuery] = useState("");
   const [resultSortBy, setResultSortBy] = useState<"name" | "count">("count");
+  const [songSortBy, setSongSortBy] = useState<"name" | "playlist">("name");
   const [expandedArtists, setExpandedArtists] = useState<Set<string>>(
     new Set(),
   );
@@ -222,14 +285,14 @@ function FindThatArtist() {
           if (!item.track || item.track.type !== "track") continue;
           const track = item.track as Track;
           for (const artist of track.artists) {
-            const entries = map.get(artist.name) ?? [];
-            const existing = entries.find((e) => e.trackName === track.name);
+            const entry = map.get(artist.name) ?? { artistId: artist.id, songs: [] };
+            const existing = entry.songs.find((e) => e.trackName === track.name);
             if (existing) {
               existing.playlistNames.push(playlist.name);
             } else {
-              entries.push({ trackName: track.name, playlistNames: [playlist.name] });
+              entry.songs.push({ trackName: track.name, playlistNames: [playlist.name] });
             }
-            map.set(artist.name, entries);
+            map.set(artist.name, entry);
           }
         }
 
@@ -263,12 +326,10 @@ function FindThatArtist() {
   const filteredArtists = useMemo(
     () =>
       [...artistMap.entries()]
-        .filter(([name]) =>
-          name.toLowerCase().includes(resultQuery.toLowerCase()),
-        )
-        .sort(([aName, aSongs], [bName, bSongs]) =>
+        .filter(([name]) => name.toLowerCase().includes(resultQuery.toLowerCase()))
+        .sort(([aName, aEntry], [bName, bEntry]) =>
           resultSortBy === "count"
-            ? bSongs.length - aSongs.length
+            ? bEntry.songs.length - aEntry.songs.length
             : aName.localeCompare(bName),
         ),
     [artistMap, resultQuery, resultSortBy],
@@ -285,7 +346,7 @@ function FindThatArtist() {
   // --- Categorization view ---
   if (view === "categorization") {
     const totalSongs = [...artistMap.values()].reduce(
-      (sum, songs) => sum + songs.length,
+      (sum, entry) => sum + entry.songs.length,
       0,
     );
     const elapsed = elapsedMs != null ? (elapsedMs / 1000).toFixed(1) : "?";
@@ -306,7 +367,7 @@ function FindThatArtist() {
           {artistMap.size} artists · {totalSongs} songs · {elapsed}s
         </Typography>
 
-        <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+        <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
           <TextField
             label="Search artist"
             value={resultQuery}
@@ -324,14 +385,29 @@ function FindThatArtist() {
             <ToggleButton value="name">A–Z</ToggleButton>
           </ToggleButtonGroup>
         </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <Typography variant="body2" color="text.secondary">Sort songs by:</Typography>
+          <ToggleButtonGroup
+            value={songSortBy}
+            exclusive
+            onChange={(_, val) => val && setSongSortBy(val)}
+            size="small"
+          >
+            <ToggleButton value="name">A–Z</ToggleButton>
+            <ToggleButton value="playlist">Playlist</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
 
-        {filteredArtists.map(([artistName, songs]) => (
+        {filteredArtists.map(([artistName, entry], index) => (
           <ArtistRow
             key={artistName}
             artistName={artistName}
-            songs={songs}
+            artistId={entry.artistId}
+            songs={entry.songs}
             isExpanded={expandedArtists.has(artistName)}
             onToggle={toggleArtistExpanded}
+            songSortBy={songSortBy}
+            index={index}
           />
         ))}
       </Box>

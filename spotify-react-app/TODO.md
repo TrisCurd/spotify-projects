@@ -14,14 +14,15 @@
 - ~~instead of showing all artists in the dictionary, make a list and let me search for specific names~~
 
 - ~~sort by artist name and number of songs they have in my playlists~~
-- Exploration: what info is available of the artist
-- add picture of artist
-- details of artist like real name, age, popularity if easy to grab
+- ~~Exploration: what info is available of the artist~~
+- ~~add picture of artist~~
+- ~~details of artist: popularity, follower count, and link to their spotify profile page~~
 - add play button after each song that lets you play a snippet of the song, similar to how instagram does it
 - suggestions of other songs from that artist you might like based on the songs already in your playlists? (might be another feature where you feed songs in)
-- if the same song appears multiple times in playlists, make it one entry (like "stick season" in playlists 2 and 14)
-- sort songs under each artist alphabetically
--
+- ~~if the same song appears multiple times in playlists, make it one entry (like "stick season" in playlists 2 and 14)~~
+- ~~sort songs under each artist alphabetically~~
+- sort songs under each artist by playlist name
+- alternate colors for each artist (like how they do it in tables)
 
 - ~~add info of which playlist has each song~~
 
